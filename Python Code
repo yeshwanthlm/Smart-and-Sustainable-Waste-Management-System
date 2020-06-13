@@ -1,0 +1,46 @@
+from boltiot import Bolt, Sms #Import Sms and Bolt class from boltiot library  
+import json, time,requests
+SID="The SID in the Twilio account"
+AUTH_TOKEN="Auth_token from twilio account"
+TO_NUMBER="Phone number to which you want to send the message"
+FROM_NUMBER="Number provided by Twilio"
+Channel_ID="Telegram ChannelID"
+Tele_BotID="Bot API key"
+SMS=Sms(SID,AUTH_TOKEN,TO_NUMBER,FROM_NUMBER)                          
+def Twilio_message(message):
+        try:
+                print('Sending message through twilio')
+                response=SMS.send_sms(message)
+                print('The status of twilio messsage is:',str(response.status))
+        except Exception as e:
+                print("Error occured in Twilio message",e)
+                print(e)
+                return False
+def Tele_message(message):
+        url='https://api.telegram.org/'+Tele_BotID+ '/sendMessage'
+        data={'chat_id':Channel_ID,'text':message}
+        try:
+                response=requests.request("GET",url,params=data)
+                print('This is the Telegram response')
+                print(response.text)
+                telegram_data=json.loads(response.text)
+                return telegram_data["ok"]
+        except Exception as e:
+                print("Error occured in sending message via Telegram")
+                print(e)
+                return False
+Bolt_ID="your bolt id"
+API_Key='bolt api key"
+garbage_full_limit = 7 # the distance between device and  garbage in dustbin
+mybolt = Bolt(API_Key,Bolt_ID)#This is to access the bolt device and send commands
+response = mybolt.serialRead('10')#fetch data from arduino
+message="Hello Brother, the trash can is full"
+while True:
+        response = mybolt.serialRead('10')  #Fetching the value from Arduino 
+        data = json.loads(response)
+        garbage_limit = data['value'].rstrip()
+        print("Garbage level is", garbage_limit)
+        if int(garbage_limit)<garbage_full_limit:
+                Twilio_message(message)
+                Tele_message(message)
+        time.sleep(10)
